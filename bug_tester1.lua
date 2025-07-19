@@ -1,40 +1,112 @@
--- Roblox Bug Testing Script (Nur für autorisierte Tests)
-local function testMovementBug()
-    local player = game:GetService("Players").LocalPlayer
-    if player.Character then
-        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = 50 -- Testet erhöhte Geschwindigkeit (falls erlaubt)
-            print("Movement Bug Test aktiviert: WalkSpeed = 50")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+-- GUI erstellen
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FlightToggleGUI"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 50)
+frame.Position = UDim2.new(0.5, -100, 0.8, -25)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.Parent = screenGui
+
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(0.9, 0, 0.8, 0)
+toggle.Position = UDim2.new(0.05, 0, 0.1, 0)
+toggle.Text = "Flugmodus: AUS"
+toggle.TextColor3 = Color3.new(1, 1, 1)
+toggle.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+toggle.Parent = frame
+
+-- Flug-Logik
+local isFlying = false
+local flySpeed = 50
+local flyConnection = nil
+
+local function startFlying()
+    if isFlying then return end
+    isFlying = true
+    toggle.Text = "Flugmodus: AN"
+    toggle.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+
+    humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+    local bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+    bodyVelocity.Parent = rootPart
+
+    flyConnection = RunService.Heartbeat:Connect(function()
+        if not isFlying then return end
+        
+        local direction = Vector3.new()
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            direction = direction + rootPart.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            direction = direction - rootPart.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            direction = direction - rootPart.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            direction = direction + rootPart.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            direction = direction + Vector3.new(0, 1, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            direction = direction + Vector3.new(0, -1, 0)
+        end
+
+        if direction.Magnitude > 0 then
+            bodyVelocity.Velocity = direction.Unit * flySpeed
+        else
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        end
+    end)
+end
+
+local function stopFlying()
+    if not isFlying then return end
+    isFlying = false
+    toggle.Text = "Flugmodus: AUS"
+    toggle.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+
+    if flyConnection then
+        flyConnection:Disconnect()
+        flyConnection = nil
+    end
+
+    for _, v in ipairs(rootPart:GetChildren()) do
+        if v:IsA("BodyVelocity") then
+            v:Destroy()
         end
     end
+
+    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 end
 
-local function testTeleportBug(position)
-    local player = game:GetService("Players").LocalPlayer
-    if player.Character then
-        player.Character:SetPrimaryPartCFrame(CFrame.new(position))
-        print("Teleport Bug Test: Position geändert zu", position)
+toggle.MouseButton1Click:Connect(function()
+    if isFlying then
+        stopFlying()
+    else
+        startFlying()
     end
-end
+end)
 
--- GUI-Test für mögliche Fehler
-local function testGuiBug()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Text = "GUI-Bug-Test"
-    textLabel.Size = UDim2.new(0, 200, 0, 50)
-    textLabel.Position = UDim2.new(0.5, -100, 0.5, -25)
-    textLabel.Parent = screenGui
-    
-    print("GUI-Bug-Test aktiviert")
-end
+-- Cleanup bei Respawn
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
+    humanoid = newChar:WaitForChild("Humanoid")
+    rootPart = newChar:WaitForChild("HumanoidRootPart")
+    stopFlying()
+end)
 
--- Hauptfunktionen exportieren
-return {
-    testMovementBug = testMovementBug,
-    testTeleportBug = testTeleportBug,
-    testGuiBug = testGuiBug
-}
