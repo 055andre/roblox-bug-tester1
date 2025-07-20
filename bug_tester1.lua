@@ -9,32 +9,32 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 
 -- GUI erstellen
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FlightToggleGUI"
+screenGui.Name = "Flying GUI"
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 50)
-frame.Position = UDim2.new(0.5, -100, 0.8, -25)
+frame.Size = UDim2.new(0.5, 0, 0.5, 0)
+frame.Position = UDim2.new(0.5, -150, 0.5, -75)
 frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 frame.Parent = screenGui
 
 local toggle = Instance.new("TextButton")
 toggle.Size = UDim2.new(0.9, 0, 0.8, 0)
 toggle.Position = UDim2.new(0.05, 0, 0.1, 0)
-toggle.Text = "Flugmodus: AUS"
+toggle.Text = "Fly Mode"
 toggle.TextColor3 = Color3.new(1, 1, 1)
 toggle.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 toggle.Parent = frame
 
 -- Flug-Logik
 local isFlying = false
-local flySpeed = 50
+local flySpeed = 75
 local flyConnection = nil
 
 local function startFlying()
     if isFlying then return end
     isFlying = true
-    toggle.Text = "Flugmodus: AN"
+    toggle.Text = "ON"
     toggle.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
 
     humanoid:ChangeState(Enum.HumanoidStateType.Physics)
@@ -77,7 +77,7 @@ end
 local function stopFlying()
     if not isFlying then return end
     isFlying = false
-    toggle.Text = "Flugmodus: AUS"
+    toggle.Text = "OFF"
     toggle.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 
     if flyConnection then
